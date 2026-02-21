@@ -55,22 +55,37 @@ def load_ghin_data(file_path: str) -> Dict[str, Any]:
     """Load and parse GHIN data from JSON file.
     
     Args:
-        file_path: Path to the JSON file containing GHIN data
+        file_path: Path to the JSON file containing GHIN data.
+                   Must be a .json file containing expected GHIN keys.
         
     Returns:
         Dictionary containing parsed GHIN data
         
     Raises:
         FileNotFoundError: If the specified file doesn't exist
-        json.JSONDecodeError: If the file contains invalid JSON
+        ValueError: If the file is not a .json file or lacks GHIN data keys
     """
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except FileNotFoundError:
+    resolved = Path(file_path).resolve()
+
+    # Restrict to .json files only to prevent arbitrary file reads
+    if resolved.suffix.lower() != ".json":
+        raise ValueError("Input file must have a .json extension")
+
+    if not resolved.is_file():
         raise FileNotFoundError(f"GHIN data file not found: {file_path}")
-    except json.JSONDecodeError as e:
-        raise json.JSONDecodeError(f"Invalid JSON in file {file_path}: {e}", e.doc, e.pos)
+
+    try:
+        with open(resolved, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError:
+        raise ValueError("File does not contain valid JSON")
+
+    # Validate expected GHIN data structure (must have at least one key field)
+    required_keys = {"scores", "handicap_index"}
+    if not isinstance(data, dict) or not required_keys.intersection(data.keys()):
+        raise ValueError("File does not appear to contain GHIN data (missing expected keys)")
+
+    return data
 
 
 def get_handicap_trend(handicap_history: List[Dict[str, Any]]) -> str:
@@ -436,11 +451,11 @@ def main() -> None:
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-    except json.JSONDecodeError as e:
+    except ValueError as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
-    except Exception as e:
-        print(f"Unexpected error: {e}", file=sys.stderr)
+    except json.JSONDecodeError as e:
+        print(f"Error: Invalid JSON in file", file=sys.stderr)
         sys.exit(1)
 
 
