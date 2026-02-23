@@ -75,63 +75,27 @@ python3 scripts/ghin_stats.py --help
 
 ## Getting Your GHIN Data
 
-⚠️ **PRIVACY NOTICE**: The following data collection guide involves browser automation with cloud services and credential transmission. Consider privacy implications before proceeding.
+**Data Collection Required:** GHIN does not offer a public API for score history. The data must be collected separately using browser automation or manual export before using this analysis skill.
 
-GHIN does not offer a public API for score history. To get your data, use browser automation to scrape **https://www.ghin.com**.
+**This skill does NOT perform data collection.** It only analyzes pre-existing JSON data files.
 
-### Using browser-use (Privacy Considerations)
+### Data Collection Options
 
-**⚠️ External Services Involved:**
-- **Cloud browser service** (browser-use API) - receives your GHIN login credentials
-- **LLM provider** (OpenAI/Anthropic via ChatBrowserUse) - processes golf data and credentials  
-- **GHIN.com** - accessed via cloud browser with your credentials
+1. **Manual Export** (Most Secure): Log into GHIN.com manually and export your data
+2. **Browser Automation** (Privacy Risk): Use tools like browser-use, Selenium, or Playwright to scrape data
+3. **OpenClaw Agent**: Let your OpenClaw agent handle the scraping using browser-use
 
-**Alternative**: For maximum privacy, manually export your GHIN data and create the JSON file locally.
+⚠️ **Important:** Any automated data collection method will require transmitting your GHIN credentials to external services. This skill itself never handles credentials or performs network requests.
 
-[browser-use](https://github.com/browser-use/browser-use) is an AI-powered browser automation library:
+### Required Data Points
 
-```bash
-pip install browser-use langchain-openai
-```
-
-```python
-import asyncio
-from browser_use import Agent, Browser, ChatBrowserUse
-
-async def main():
-    # WARNING: This sends your GHIN credentials to cloud services
-    browser = Browser(use_cloud=True)  # Cloud browser service
-    llm = ChatBrowserUse()  # Requires OpenAI API key
-    agent = Agent(
-        task="""Log into https://www.ghin.com with my credentials.
-        Navigate to Score History. Extract ALL scores across all years
-        (cycle through year filters). For each score get: date, score
-        with type (A/C/H), course name, course rating/slope, differential.
-        Also get current handicap index and revision history.
-        Save as JSON to ghin-data.json""",
-        llm=llm, browser=browser,
-    )
-    await agent.run(max_steps=50)
-
-asyncio.run(main())
-```
-
-**Credentials Required:**
-- GHIN login credentials (transmitted to cloud browser)  
-- OpenAI API key (for ChatBrowserUse LLM)
-- browser-use cloud service access
-
-### What to scrape
-
-| Section | Data |
-|---------|------|
+| Section | Data Needed |
+|---------|-------------|
 | Score History | Date, score + type, course, CR/slope, differential (per year) |
 | Handicap Index | Current index, effective date |
 | Revision History | Historical index values with revision dates |
 
-**Tips:** GHIN shows one year at a time — cycle through each year filter to get lifetime data. Score types: `A` = adjusted, `C` = combined 9+9, `H` = home, `Ai` = imputed (exclude from stats).
-
-**Privacy Reminder:** The above method transmits your GHIN credentials and golf data to cloud services. For sensitive data, consider manual data export instead.
+**Note:** GHIN shows one year at a time — you'll need to cycle through each year filter to get complete lifetime data. Score types: `A` = adjusted, `C` = combined 9+9, `H` = home, `Ai` = imputed (exclude from stats).
 
 ## Expected Data Format
 
